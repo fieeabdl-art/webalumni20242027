@@ -25,7 +25,11 @@ class HomeController extends Controller
                 'memories' => Gallery::query()->where('status', true)->count() ?: null,
             ],
             'members' => Member::query()->where('status', true)->orderBy('sort_order')->orderBy('name')->limit(4)->get(),
-            'teachers' => Teacher::query()->where('status', true)->orderBy('sort_order')->orderBy('name')->limit(3)->get(),
+            'teachers' => Teacher::query()
+                ->where('status', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'subject', 'role', 'photo_path', 'quote']),
             'memories' => Gallery::query()->where('status', true)->where('is_featured', true)->orderBy('sort_order')->orderBy('id')->limit(6)->get(),
             'quote' => PageContent::query()
                 ->where('type', 'quote')

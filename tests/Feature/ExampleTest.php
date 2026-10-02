@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Gallery;
 use App\Models\PageContent;
+use App\Models\Teacher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -21,7 +22,9 @@ class ExampleTest extends TestCase
 
         $response->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('Public/Home')
+            ->has('teachers', 0)
             ->where('stats.memories', null)
+            ->where('stats.teachers', null)
             ->where('quote', null));
     }
 
@@ -81,5 +84,46 @@ class ExampleTest extends TestCase
             ->where('stats.memories', 3)
             ->where('quote.content', 'Kutipan yang ditampilkan')
             ->where('quote.attribution', 'Pengurus'));
+    }
+
+    public function test_home_page_shows_all_published_teachers_in_sort_order(): void
+    {
+        Teacher::query()->create([
+            'name' => 'Guru kedua',
+            'subject' => 'Matematika',
+            'status' => true,
+            'sort_order' => 2,
+        ]);
+        Teacher::query()->create([
+            'name' => 'Guru pertama',
+            'subject' => 'Bahasa Indonesia',
+            'status' => true,
+            'sort_order' => 1,
+        ]);
+        Teacher::query()->create([
+            'name' => 'Guru ketiga',
+            'subject' => 'Sejarah',
+            'status' => true,
+            'sort_order' => 3,
+        ]);
+        Teacher::query()->create([
+            'name' => 'Guru keempat',
+            'subject' => 'Fisika',
+            'status' => true,
+            'sort_order' => 4,
+        ]);
+        Teacher::query()->create([
+            'name' => 'Guru tersembunyi',
+            'status' => false,
+            'sort_order' => 0,
+        ]);
+
+        $this->get('/')->assertInertia(fn (Assert $page) => $page
+            ->component('Public/Home')
+            ->has('teachers', 4)
+            ->where('teachers.0.name', 'Guru pertama')
+            ->where('teachers.1.name', 'Guru kedua')
+            ->where('teachers.2.name', 'Guru ketiga')
+            ->where('teachers.3.name', 'Guru keempat'));
     }
 }

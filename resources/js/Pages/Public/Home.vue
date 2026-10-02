@@ -7,6 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import PublicLayout from '../../Layouts/PublicLayout.vue';
 import SectionEyebrow from '../../Components/SectionEyebrow.vue';
 import CorkboardArchive from '../../Components/CorkboardArchive.vue';
+import TeacherCoverflow from '../../Components/TeacherCoverflow.vue';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -194,24 +195,8 @@ onUnmounted(() => {
             </div>
         </section>
 
-        <section class="bg-[#242424] px-6 py-24 text-[#f5f2ec] sm:px-10 sm:py-32 lg:px-14">
-            <div data-scroll-reveal class="mx-auto max-w-[1400px]">
-                <div class="flex flex-wrap items-end justify-between gap-6">
-                    <div><SectionEyebrow number="04" label="Mereka yang membersamai" light /><h2 class="mt-5 font-editorial text-4xl sm:text-6xl">Guru kami.</h2></div>
-                    <Link href="/guru" class="focus-ring inline-flex items-center gap-2 border-b border-white/50 pb-2 text-[9px] font-semibold uppercase tracking-[0.16em]">Kenali guru kami <ArrowUpRight :size="14" /></Link>
-                </div>
-                <div v-if="teachers.length" class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    <article v-for="teacher in teachers" :key="teacher.id" class="grid grid-cols-[92px_1fr] items-center gap-5 border-t border-white/20 py-5 sm:grid-cols-[120px_1fr]">
-                        <div class="aspect-[4/5] overflow-hidden bg-white/10">
-                            <img v-if="teacher.photo_url" :src="teacher.photo_url" :alt="teacher.name" loading="lazy" class="h-full w-full object-cover">
-                            <div v-else class="grid h-full place-items-center text-[8px] uppercase tracking-[0.1em] text-white/45">DATA BELUM TERSEDIA</div>
-                        </div>
-                        <div><p class="font-editorial text-xl">{{ teacher.name }}</p><p class="mt-2 text-[9px] uppercase tracking-[0.12em] text-white/55">{{ teacher.subject || 'DATA BELUM TERSEDIA' }}</p></div>
-                    </article>
-                </div>
-                <p v-else class="mt-12 border-y border-white/20 py-7 text-[10px] uppercase tracking-[0.16em] text-white/50">DATA BELUM TERSEDIA</p>
-            </div>
-        </section>
+        <div class="section-divider" aria-hidden="true"></div>
+        <TeacherCoverflow :teachers="teachers" />
 
         <div class="section-divider--dark" aria-hidden="true"></div>
         <section class="bg-[#111111] px-6 py-24 text-[#f5f2ec] sm:px-10 sm:py-32 lg:px-14">
