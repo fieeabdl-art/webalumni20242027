@@ -18,6 +18,37 @@ const activeIndex = ref(0);
 const activeTeacher = computed(() => props.teachers[activeIndex.value] ?? null);
 let swiperInstance;
 let animationContext;
+let activeCardTween;
+
+function animateActiveCard(instance) {
+    const activeCard = instance.el.querySelector('.swiper-slide-active .teacher-slide__inner');
+    const activeLabel = activeCard?.querySelector('[data-teacher-label]');
+
+    if (!activeCard) {
+        return;
+    }
+
+    activeCardTween?.kill();
+    activeCardTween = gsap.timeline();
+    activeCardTween
+        .set(activeCard, {
+            '--card-bounce-y': '-6px',
+            '--card-bounce-scale': 0.05,
+        })
+        .to(activeCard, {
+            '--card-bounce-y': '0px',
+            '--card-bounce-scale': 0,
+            duration: 0.5,
+            ease: 'back.out(1.55)',
+        })
+        .fromTo(activeLabel, {
+            clipPath: 'inset(0 100% 0 0)',
+        }, {
+            clipPath: 'inset(0 0% 0 0)',
+            duration: 0.32,
+            ease: 'power2.out',
+        }, 0.04);
+}
 
 async function initializeSlider() {
     if (!section.value) {
@@ -43,8 +74,9 @@ async function initializeSlider() {
             coverflowEffect: {
                 rotate: 35,
                 stretch: 0,
-                depth: 180,
+                depth: 220,
                 modifier: 1,
+                scale: 0.85,
                 slideShadows: false,
             },
             effect: 'coverflow',
@@ -60,8 +92,9 @@ async function initializeSlider() {
                     coverflowEffect: {
                         rotate: 16,
                         stretch: 0,
-                        depth: 90,
+                        depth: 110,
                         modifier: 1,
+                        scale: 0.9,
                         slideShadows: false,
                     },
                 },
@@ -69,8 +102,9 @@ async function initializeSlider() {
                     coverflowEffect: {
                         rotate: 28,
                         stretch: 0,
-                        depth: 140,
+                        depth: 180,
                         modifier: 1,
+                        scale: 0.85,
                         slideShadows: false,
                     },
                 },
@@ -78,8 +112,9 @@ async function initializeSlider() {
                     coverflowEffect: {
                         rotate: 35,
                         stretch: 0,
-                        depth: 180,
+                        depth: 220,
                         modifier: 1,
+                        scale: 0.85,
                         slideShadows: false,
                     },
                 },
@@ -88,22 +123,27 @@ async function initializeSlider() {
                 realIndexChange(instance) {
                     activeIndex.value = instance.realIndex;
                 },
+                slideChangeTransitionStart(instance) {
+                    if (!prefersReducedMotion) {
+                        animateActiveCard(instance);
+                    }
+                },
             },
         });
         activeIndex.value = swiperInstance.realIndex;
     }
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const cards = section.value.querySelectorAll('[data-coverflow-card]');
+    const cards = section.value.querySelectorAll('[data-coverflow-card] .teacher-slide__inner');
 
     if (!prefersReducedMotion && cards.length > 0) {
         animationContext = gsap.context(() => {
             gsap.fromTo(cards, {
                 opacity: 0,
-                scale: 0.9,
+                '--card-entrance-scale': 0.9,
             }, {
                 opacity: 1,
-                scale: 1,
+                '--card-entrance-scale': 1,
                 duration: 0.65,
                 stagger: 0.08,
                 ease: 'power3.out',
@@ -125,6 +165,18 @@ async function initializeSlider() {
                     once: true,
                 },
             });
+
+            if (props.teachers.length === 1) {
+                gsap.fromTo('.teacher-slide--single .teacher-slide__inner', {
+                    '--single-float-y': '-4px',
+                }, {
+                    '--single-float-y': '4px',
+                    duration: 2.5,
+                    ease: 'sine.inOut',
+                    repeat: -1,
+                    yoyo: true,
+                });
+            }
         }, section.value);
     }
 }
@@ -148,6 +200,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     animationContext?.revert();
+    activeCardTween?.kill();
     swiperInstance?.destroy(true, true);
 });
 </script>
@@ -193,27 +246,30 @@ onBeforeUnmount(() => {
 
             <div v-else-if="teachers.length === 1" class="mt-14 flex justify-center">
                 <article
-                    class="teacher-slide teacher-slide--active group relative aspect-[3/4] w-[min(82vw,320px)] overflow-hidden rounded-sm bg-[#242424] shadow-[0_24px_60px_rgba(0,0,0,0.4)]"
+                    class="teacher-slide teacher-slide--active teacher-slide--single group relative aspect-[3/4] w-[min(82vw,320px)]"
                     data-coverflow-card
                 >
-                    <div class="teacher-slide__surface relative h-full w-full overflow-hidden rounded-sm">
-                        <img
-                            v-if="teachers[0].photo_url"
-                            :src="teachers[0].photo_url"
-                            :alt="teachers[0].name"
-                            class="teacher-slide__photo absolute inset-0 h-full w-full object-cover"
-                            loading="eager"
-                            fetchpriority="high"
-                        >
-                        <div v-else class="archive-grain grid h-full place-items-center px-5 text-center text-[10px] font-medium uppercase tracking-[0.12em] text-[#d7d1c7]">
-                            DATA BELUM TERSEDIA
-                        </div>
-                        <span data-teacher-label class="teacher-slide__label absolute left-0 top-5 max-w-[86%] truncate bg-[#a8433b] px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-white">
-                            {{ (teachers[0].subject || teachers[0].role || 'DATA BELUM TERSEDIA').toLocaleUpperCase('id') }}
-                        </span>
-                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent px-5 pb-5 pt-16">
-                            <p class="font-editorial text-2xl">{{ teachers[0].name }}</p>
-                            <p class="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-white/80">{{ teachers[0].role || teachers[0].subject || 'DATA BELUM TERSEDIA' }}</p>
+                    <div class="teacher-slide__transform relative h-full w-full">
+                        <span class="teacher-slide__contact" aria-hidden="true"></span>
+                        <div class="teacher-slide__inner teacher-slide__inner--active relative h-full w-full overflow-hidden rounded-sm bg-[#242424]">
+                            <img
+                                v-if="teachers[0].photo_url"
+                                :src="teachers[0].photo_url"
+                                :alt="teachers[0].name"
+                                class="teacher-slide__photo absolute inset-0 h-full w-full object-cover"
+                                loading="eager"
+                                fetchpriority="high"
+                            >
+                            <div v-else class="archive-grain grid h-full place-items-center px-5 text-center text-[10px] font-medium uppercase tracking-[0.12em] text-[#d7d1c7]">
+                                DATA BELUM TERSEDIA
+                            </div>
+                            <span data-teacher-label class="teacher-slide__label absolute left-0 top-5 max-w-[86%] truncate bg-[#a8433b] px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-white">
+                                {{ (teachers[0].subject || teachers[0].role || 'DATA BELUM TERSEDIA').toLocaleUpperCase('id') }}
+                            </span>
+                            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent px-5 pb-5 pt-16">
+                                <p class="font-editorial text-2xl">{{ teachers[0].name }}</p>
+                                <p class="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-white/80">{{ teachers[0].role || teachers[0].subject || 'DATA BELUM TERSEDIA' }}</p>
+                            </div>
                         </div>
                     </div>
                 </article>
@@ -232,7 +288,7 @@ onBeforeUnmount(() => {
                             <article
                                 v-for="(teacher, index) in teachers"
                                 :key="teacher.id"
-                                class="swiper-slide teacher-slide group relative aspect-[3/4] cursor-pointer overflow-hidden rounded-sm bg-[#242424] shadow-[0_20px_50px_rgba(0,0,0,0.35)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d7b68e]"
+                                class="swiper-slide teacher-slide group relative aspect-[3/4] cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#d7b68e]"
                                 data-coverflow-card
                                 role="group"
                                 aria-roledescription="slide"
@@ -241,24 +297,30 @@ onBeforeUnmount(() => {
                                 @click="goToSlide(index)"
                                 @keydown.enter.prevent="goToSlide(index)"
                             >
-                                <div class="teacher-slide__surface relative h-full w-full overflow-hidden rounded-sm">
-                                    <img
-                                        v-if="teacher.photo_url"
-                                        :src="teacher.photo_url"
-                                        :alt="teacher.name"
-                                        class="teacher-slide__photo absolute inset-0 h-full w-full object-cover"
-                                        :loading="index === activeIndex ? 'eager' : 'lazy'"
-                                        :fetchpriority="index === activeIndex ? 'high' : 'auto'"
+                                <div class="swiper-slide-transform teacher-slide__transform relative h-full w-full">
+                                    <span class="teacher-slide__contact" aria-hidden="true"></span>
+                                    <div
+                                        class="teacher-slide__inner relative h-full w-full overflow-hidden rounded-sm bg-[#242424]"
+                                        :class="{ 'teacher-slide__inner--active': index === activeIndex }"
                                     >
-                                    <div v-else class="archive-grain grid h-full place-items-center px-5 text-center text-[10px] font-medium uppercase tracking-[0.12em] text-[#d7d1c7]">
-                                        DATA BELUM TERSEDIA
-                                    </div>
-                                    <span data-teacher-label class="teacher-slide__label absolute left-0 top-5 max-w-[86%] truncate bg-[#a8433b] px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-white">
-                                        {{ (teacher.subject || teacher.role || 'DATA BELUM TERSEDIA').toLocaleUpperCase('id') }}
-                                    </span>
-                                    <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent px-4 pb-5 pt-16 sm:px-5">
-                                        <p class="font-editorial text-xl sm:text-2xl">{{ teacher.name }}</p>
-                                        <p class="mt-2 truncate text-[9px] font-medium uppercase tracking-[0.12em] text-white/80">{{ teacher.role || teacher.subject || 'DATA BELUM TERSEDIA' }}</p>
+                                        <img
+                                            v-if="teacher.photo_url"
+                                            :src="teacher.photo_url"
+                                            :alt="teacher.name"
+                                            class="teacher-slide__photo absolute inset-0 h-full w-full object-cover"
+                                            :loading="index === activeIndex ? 'eager' : 'lazy'"
+                                            :fetchpriority="index === activeIndex ? 'high' : 'auto'"
+                                        >
+                                        <div v-else class="archive-grain grid h-full place-items-center px-5 text-center text-[10px] font-medium uppercase tracking-[0.12em] text-[#d7d1c7]">
+                                            DATA BELUM TERSEDIA
+                                        </div>
+                                        <span data-teacher-label class="teacher-slide__label absolute left-0 top-5 max-w-[86%] truncate bg-[#a8433b] px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-white">
+                                            {{ (teacher.subject || teacher.role || 'DATA BELUM TERSEDIA').toLocaleUpperCase('id') }}
+                                        </span>
+                                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent px-4 pb-5 pt-16 sm:px-5">
+                                            <p class="font-editorial text-xl sm:text-2xl">{{ teacher.name }}</p>
+                                            <p class="mt-2 truncate text-[9px] font-medium uppercase tracking-[0.12em] text-white/80">{{ teacher.role || teacher.subject || 'DATA BELUM TERSEDIA' }}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </article>
@@ -268,7 +330,7 @@ onBeforeUnmount(() => {
 
                 <div
                     v-if="activeTeacher"
-                    class="mx-auto mt-8 min-h-32 max-w-2xl text-center"
+                    class="teacher-coverflow__caption mx-auto mt-5 min-h-36 max-w-2xl text-center sm:mt-7"
                     aria-live="polite"
                     aria-atomic="true"
                 >
@@ -306,7 +368,7 @@ onBeforeUnmount(() => {
                 </div>
             </div>
 
-            <div v-if="teachers.length === 1" class="mx-auto mt-8 min-h-32 max-w-2xl text-center" aria-live="polite">
+            <div v-if="teachers.length === 1" class="teacher-coverflow__caption mx-auto mt-5 min-h-36 max-w-2xl text-center sm:mt-7" aria-live="polite">
                 <p class="font-editorial text-2xl">{{ teachers[0].name }}</p>
                 <p class="mt-2 text-[10px] font-medium uppercase tracking-[0.15em] text-[#d7d1c7]">
                     {{ teachers[0].role || teachers[0].subject || 'DATA BELUM TERSEDIA' }}
@@ -331,13 +393,14 @@ onBeforeUnmount(() => {
 
 .teacher-coverflow__mask {
     overflow: visible;
-    padding: 0.75rem 0 1.5rem;
+    padding: 3.75rem 0 2.75rem;
 }
 
 .teacher-coverflow__swiper {
     width: 52%;
     margin-inline: auto;
     overflow: visible;
+    perspective: 1200px;
 }
 
 .teacher-coverflow__swiper :deep(.swiper-wrapper) {
@@ -349,6 +412,7 @@ onBeforeUnmount(() => {
     position: relative;
     display: block;
     flex-shrink: 0;
+    overflow: visible;
 }
 
 .teacher-slide {
@@ -359,23 +423,101 @@ onBeforeUnmount(() => {
     width: clamp(185px, 17vw, 245px);
 }
 
-.teacher-slide__surface {
-    transform: scale(0.92);
-    transition: transform 600ms cubic-bezier(0.2, 0.75, 0.25, 1);
+.teacher-coverflow__swiper :deep(.swiper-slide-transform) {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.teacher-slide__transform {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.teacher-slide__inner {
+    --card-lift: 0px;
+    --card-scale: 0.8;
+    --card-entrance-scale: 1;
+    --card-bounce-y: 0px;
+    --card-bounce-scale: 0;
+    --single-float-y: 0px;
+    position: relative;
+    z-index: 1;
+    transform: translate3d(0, calc(var(--card-lift) + var(--card-bounce-y) + var(--single-float-y)), 0) scale(calc(var(--card-scale) * var(--card-entrance-scale) + var(--card-bounce-scale)));
+    transform-origin: center bottom;
+    box-shadow: 0 10px 26px rgb(0 0 0 / 22%);
+    transition:
+        transform 600ms cubic-bezier(0.22, 1, 0.36, 1),
+        filter 600ms ease,
+        box-shadow 600ms ease;
+}
+
+.teacher-coverflow__swiper :deep(.swiper-slide-prev) .teacher-slide__inner,
+.teacher-coverflow__swiper :deep(.swiper-slide-next) .teacher-slide__inner {
+    --card-scale: 0.9;
+}
+
+.teacher-coverflow__swiper :deep(.swiper-slide-active) {
+    z-index: 10 !important;
+    opacity: 1;
+}
+
+.teacher-coverflow__swiper :deep(.swiper-slide-active) .teacher-slide__inner,
+.teacher-slide--active .teacher-slide__inner {
+    --card-lift: -32px;
+    --card-scale: 1.14;
+    z-index: 2;
+    box-shadow:
+        0 30px 60px rgb(0 0 0 / 55%),
+        0 10px 28px rgb(163 139 104 / 24%);
+}
+
+.teacher-slide__contact {
+    position: absolute;
+    right: 12%;
+    bottom: -1.1rem;
+    left: 12%;
+    height: 1.15rem;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 62%);
+    filter: blur(9px);
+    opacity: 0.68;
+    transform: scaleX(0.96);
+    transition: transform 600ms ease, opacity 600ms ease;
+}
+
+.teacher-coverflow__swiper :deep(.swiper-slide-active) .teacher-slide__contact,
+.teacher-slide--active .teacher-slide__contact {
+    opacity: 0.42;
+    transform: scaleX(0.62);
+}
+
+.teacher-slide--single .teacher-slide__inner {
+    --card-lift: -32px;
+    --card-scale: 1.14;
+    --single-float-y: 0px;
+    box-shadow:
+        0 30px 60px rgb(0 0 0 / 55%),
+        0 10px 28px rgb(163 139 104 / 24%);
 }
 
 .teacher-slide__photo {
+    opacity: 0.72;
     filter: grayscale(1) contrast(1.05) brightness(0.88);
-    transition: filter 550ms ease, transform 700ms cubic-bezier(0.2, 0.75, 0.25, 1);
+    transition: filter 600ms ease, opacity 600ms ease, transform 700ms cubic-bezier(0.2, 0.75, 0.25, 1);
 }
 
 :deep(.swiper-slide-active) .teacher-slide__photo {
+    opacity: 1;
     filter: grayscale(0) contrast(1) brightness(1);
 }
 
-.teacher-slide--active .teacher-slide__surface,
-:deep(.swiper-slide-active) .teacher-slide__surface {
-    transform: scale(1.04);
+.teacher-coverflow__swiper :deep(.swiper-slide-prev) .teacher-slide__photo,
+.teacher-coverflow__swiper :deep(.swiper-slide-next) .teacher-slide__photo {
+    opacity: 0.84;
 }
 
 .teacher-slide--active,
@@ -412,9 +554,22 @@ onBeforeUnmount(() => {
     transform: translateY(8px);
 }
 
+.teacher-coverflow__caption {
+    position: relative;
+    z-index: 11;
+}
+
 @media (min-width: 768px) and (hover: hover) and (pointer: fine) {
-    :deep(.swiper-slide:not(.swiper-slide-active):hover) .teacher-slide__photo {
+    .teacher-coverflow__swiper :deep(.swiper-slide:not(.swiper-slide-active):hover) .teacher-slide__photo {
+        opacity: 0.94;
         filter: grayscale(0.45) contrast(1) brightness(0.96);
+    }
+
+    .teacher-coverflow__swiper :deep(.swiper-slide-active:hover) .teacher-slide__inner {
+        --card-lift: -39px;
+        box-shadow:
+            0 36px 70px rgb(0 0 0 / 62%),
+            0 12px 30px rgb(163 139 104 / 30%);
     }
 }
 
@@ -447,12 +602,48 @@ onBeforeUnmount(() => {
     .teacher-slide.swiper-slide {
         width: 72vw;
     }
+
+    .teacher-coverflow__mask {
+        padding-top: 2.75rem;
+        padding-bottom: 2rem;
+    }
+
+    .teacher-coverflow__swiper {
+        perspective: 900px;
+    }
+
+    .teacher-coverflow__swiper :deep(.swiper-slide-prev) .teacher-slide__inner,
+    .teacher-coverflow__swiper :deep(.swiper-slide-next) .teacher-slide__inner {
+        --card-scale: 0.82;
+    }
+
+    .teacher-coverflow__swiper :deep(.swiper-slide-active) .teacher-slide__inner,
+    .teacher-slide--active .teacher-slide__inner {
+        --card-lift: -16px;
+        --card-scale: 1.06;
+        box-shadow:
+            0 22px 38px rgb(0 0 0 / 48%),
+            0 8px 18px rgb(163 139 104 / 18%);
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .teacher-coverflow__mask {
+        padding-top: 3.25rem;
+    }
+
+    .teacher-coverflow__swiper :deep(.swiper-slide-active) .teacher-slide__inner,
+    .teacher-slide--active .teacher-slide__inner {
+        --card-lift: -24px;
+        --card-scale: 1.1;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .teacher-slide,
-    .teacher-slide__surface,
+    .teacher-slide__inner,
+    .teacher-slide__contact,
     .teacher-slide__photo,
+    .teacher-coverflow__swiper :deep(.swiper-slide),
     .teacher-copy-enter-active,
     .teacher-copy-leave-active {
         transition-duration: 0.01ms !important;
