@@ -17,6 +17,8 @@ class MemberControllerTest extends TestCase
             'name' => 'Anggota Uji',
             'class_name' => 'Kelas Uji',
             'major' => 'Jurusan Uji',
+            'photo_path' => 'yearbook/members/original.webp',
+            'photo_cutout' => 'yearbook/members/cutouts/poster.png',
             'status' => true,
             'sort_order' => 0,
         ]);
@@ -26,7 +28,10 @@ class MemberControllerTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Public/Member')
                 ->where('member.name', 'Anggota Uji')
-                ->where('member.class_name', 'Kelas Uji'));
+                ->where('member.class_name', 'Kelas Uji')
+                ->where('member.original_url', asset('storage/yearbook/members/original.webp'))
+                ->where('member.poster_url', asset('storage/yearbook/members/cutouts/poster.png'))
+                ->where('member.poster_uses_cutout', true));
     }
 
     public function test_draft_member_details_return_not_found(): void
@@ -58,7 +63,10 @@ class MemberControllerTest extends TestCase
                 ->where('classes.0', 'Kelas Lama')
                 ->where('members.0.class_name', 'Kelas Lama')
                 ->where('members.0.major', 'rpl')
-                ->where('members.0.photo_cutout_url', null));
+                ->where('members.0.photo_cutout_url', null)
+                ->where('members.0.original_url', null)
+                ->where('members.0.poster_url', null)
+                ->where('members.0.poster_uses_cutout', false));
     }
 
     public function test_home_member_preview_includes_the_public_cutout_image_url(): void
@@ -66,6 +74,7 @@ class MemberControllerTest extends TestCase
         Member::query()->create([
             'name' => 'Anggota Poster',
             'major' => 'RPL',
+            'photo_path' => 'yearbook/members/member.webp',
             'photo_cutout' => 'yearbook/members/cutouts/member.png',
             'status' => true,
             'sort_order' => 0,
@@ -74,6 +83,9 @@ class MemberControllerTest extends TestCase
         $this->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Public/Home')
-                ->where('members.0.photo_cutout_url', asset('storage/yearbook/members/cutouts/member.png')));
+                ->where('members.0.photo_cutout_url', asset('storage/yearbook/members/cutouts/member.png'))
+                ->where('members.0.original_url', asset('storage/yearbook/members/member.webp'))
+                ->where('members.0.poster_url', asset('storage/yearbook/members/cutouts/member.png'))
+                ->where('members.0.poster_uses_cutout', true));
     }
 }

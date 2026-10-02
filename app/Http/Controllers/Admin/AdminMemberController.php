@@ -35,7 +35,7 @@ class AdminMemberController extends Controller
         $data = $this->validated($request);
         $photo = $request->file('photo');
         $cutout = $request->file('photo_cutout');
-        unset($data['photo'], $data['photo_cutout']);
+        unset($data['photo'], $data['photo_cutout'], $data['remove_photo'], $data['remove_photo_cutout']);
         $member = Member::query()->create($data);
 
         if ($photo) {
@@ -66,26 +66,29 @@ class AdminMemberController extends Controller
         $cutout = $request->file('photo_cutout');
         $oldPhoto = $anggota->photo_path;
         $oldCutout = $anggota->photo_cutout;
-        unset($data['photo'], $data['photo_cutout']);
-        $anggota->update($data);
+        $removePhoto = ! $photo && $request->boolean('remove_photo');
+        $removeCutout = ! $cutout && $request->boolean('remove_photo_cutout');
+        unset($data['photo'], $data['photo_cutout'], $data['remove_photo'], $data['remove_photo_cutout']);
 
         if ($photo) {
             $anggota->photo_path = $this->storeImage($photo, 'yearbook/members');
+        } elseif ($removePhoto) {
+            $anggota->photo_path = null;
         }
 
         if ($cutout) {
             $anggota->photo_cutout = $this->storeImage($cutout, 'yearbook/members/cutouts');
+        } elseif ($removeCutout) {
+            $anggota->photo_cutout = null;
         }
 
-        if ($photo || $cutout) {
-            $anggota->save();
-        }
+        $anggota->fill($data)->save();
 
-        if ($photo && $oldPhoto) {
+        if (($photo || $removePhoto) && $oldPhoto) {
             $this->deleteImage($oldPhoto);
         }
 
-        if ($cutout && $oldCutout) {
+        if (($cutout || $removeCutout) && $oldCutout) {
             $this->deleteImage($oldCutout);
         }
 
@@ -108,8 +111,10 @@ class AdminMemberController extends Controller
             'nickname' => ['nullable', 'string', 'max:100'],
             'class_name' => ['nullable', 'string', 'max:100'],
             'major' => ['required', 'string', Rule::in(Member::MAJORS)],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'photo_cutout' => ['nullable', 'image', 'mimes:png,webp', 'max:5120'],
+            'remove_photo' => ['sometimes', 'boolean'],
+            'remove_photo_cutout' => ['sometimes', 'boolean'],
             'quote' => ['nullable', 'string', 'max:1000'],
             'bio' => ['nullable', 'string', 'max:5000'],
             'instagram' => ['nullable', 'url', 'max:255'],

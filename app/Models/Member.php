@@ -10,7 +10,13 @@ class Member extends Model
 {
     public const MAJORS = ['PPLG', 'TKR', 'AKL', 'RPL'];
 
-    protected $appends = ['photo_url', 'photo_cutout_url'];
+    protected $appends = [
+        'photo_url',
+        'photo_cutout_url',
+        'original_url',
+        'poster_url',
+        'poster_uses_cutout',
+    ];
 
     protected function casts(): array
     {
@@ -25,5 +31,20 @@ class Member extends Model
     public function getPhotoCutoutUrlAttribute(): ?string
     {
         return $this->photo_cutout ? asset('storage/'.$this->photo_cutout) : null;
+    }
+
+    public function getOriginalUrlAttribute(): ?string
+    {
+        return $this->photo_url;
+    }
+
+    public function getPosterUrlAttribute(): ?string
+    {
+        return $this->photo_cutout_url ?? $this->original_url;
+    }
+
+    public function getPosterUsesCutoutAttribute(): bool
+    {
+        return $this->photo_cutout !== null;
     }
 }

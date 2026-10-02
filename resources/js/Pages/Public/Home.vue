@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { ArrowDown, ArrowUpRight } from '@lucide/vue';
 import gsap from 'gsap';
@@ -8,10 +8,11 @@ import PublicLayout from '../../Layouts/PublicLayout.vue';
 import SectionEyebrow from '../../Components/SectionEyebrow.vue';
 import CorkboardArchive from '../../Components/CorkboardArchive.vue';
 import MemberPoster from '../../Components/MemberPoster.vue';
-import MemberDetailLightbox from '../../Components/MemberDetailLightbox.vue';
 import TeacherCoverflow from '../../Components/TeacherCoverflow.vue';
 
 gsap.registerPlugin(ScrollTrigger);
+
+const MemberDetailLightbox = defineAsyncComponent(() => import('../../Components/MemberDetailLightbox.vue'));
 
 const props = defineProps({
     site: { type: Object, default: () => ({}) },
@@ -28,11 +29,13 @@ const heroImage = ref(null);
 const statsSection = ref(null);
 const heroTitle = computed(() => props.home.hero_title || 'DATA BELUM TERSEDIA');
 const selectedMemberIndex = ref(-1);
+const memberOriginRect = ref(null);
 const isMemberLightboxOpen = computed(() => selectedMemberIndex.value >= 0);
 let animationContext;
 
-function openMember(member) {
+function openMember({ member, originRect }) {
     selectedMemberIndex.value = props.members.findIndex((item) => item.id === member.id);
+    memberOriginRect.value = originRect;
 }
 
 function navigateMember(direction) {
@@ -223,6 +226,7 @@ onUnmounted(() => {
                 :members="members"
                 :index="selectedMemberIndex"
                 :open="isMemberLightboxOpen"
+                :origin-rect="memberOriginRect"
                 @close="closeMemberLightbox"
                 @navigate="navigateMember"
             />

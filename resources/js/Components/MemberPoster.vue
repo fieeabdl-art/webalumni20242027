@@ -12,7 +12,8 @@ const props = defineProps({
 
 const emit = defineEmits(['open']);
 const poster = ref(null);
-const hasCutout = computed(() => Boolean(props.member.photo_cutout_url));
+const hasCutout = computed(() => props.member.poster_uses_cutout === true);
+const posterUrl = computed(() => props.member.poster_url || null);
 const fullName = computed(() => props.member.name?.trim() || 'DATA BELUM TERSEDIA');
 const displayName = computed(() => props.member.nickname?.trim() || fullName.value.split(/\s+/)[0]);
 const titleLines = computed(() => {
@@ -30,13 +31,59 @@ const posterStyle = computed(() => ({
     '--poster-tilt': `${((props.index % 5) - 2) * 0.7}deg`,
 }));
 let animationContext;
+let preloadObserver;
+let preloadIdleCallback;
+let preloadTimeout;
+let originalPreloaded = false;
 
 function openDetails() {
-    emit('open', props.member);
+    const origin = poster.value?.querySelector('.member-poster__portrait') ?? poster.value;
+    const bounds = origin?.getBoundingClientRect();
+
+    emit('open', {
+        member: props.member,
+        originRect: bounds ? {
+            left: bounds.left,
+            top: bounds.top,
+            width: bounds.width,
+            height: bounds.height,
+        } : null,
+    });
+}
+
+function preloadOriginal() {
+    if (originalPreloaded || !props.member.original_url) {
+        return;
+    }
+
+    originalPreloaded = true;
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = props.member.original_url;
+}
+
+function scheduleOriginalPreload() {
+    if ('requestIdleCallback' in window) {
+        preloadIdleCallback = window.requestIdleCallback(preloadOriginal, { timeout: 1200 });
+    } else {
+        preloadTimeout = window.setTimeout(preloadOriginal, 250);
+    }
 }
 
 onMounted(() => {
     gsap.registerPlugin(ScrollTrigger);
+
+    if ('IntersectionObserver' in window && poster.value) {
+        preloadObserver = new IntersectionObserver((entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+                preloadObserver?.disconnect();
+                scheduleOriginalPreload();
+            }
+        }, { rootMargin: '160px' });
+        preloadObserver.observe(poster.value);
+    } else {
+        scheduleOriginalPreload();
+    }
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !poster.value) {
         return;
@@ -83,6 +130,15 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     animationContext?.revert();
+    preloadObserver?.disconnect();
+
+    if (preloadIdleCallback !== undefined && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(preloadIdleCallback);
+    }
+
+    if (preloadTimeout !== undefined) {
+        window.clearTimeout(preloadTimeout);
+    }
 });
 </script>
 
@@ -98,7 +154,10 @@ onBeforeUnmount(() => {
             type="button"
             class="member-poster__button focus-ring absolute inset-0 block h-full w-full overflow-hidden text-left"
             :aria-label="`Lihat profil ${fullName}${member.nickname ? `, dipanggil ${member.nickname}` : ''}`"
+            aria-haspopup="dialog"
             @click="openDetails"
+            @mouseenter="preloadOriginal"
+            @focusin="preloadOriginal"
         >
             <span class="member-poster__background absolute inset-0" aria-hidden="true"></span>
             <span class="member-poster__grain archive-grain pointer-events-none absolute inset-0" aria-hidden="true"></span>
@@ -124,14 +183,14 @@ onBeforeUnmount(() => {
             <span class="member-poster__slashes absolute left-0 right-0 top-[56%] z-[1] h-px -rotate-[13deg] bg-[#a8433b]/55" aria-hidden="true"></span>
 
             <span
-                v-if="member.photo_url"
+                v-if="posterUrl"
                 class="member-poster__portrait absolute bottom-[13%] left-[5%] z-[3] block w-[90%]"
                 :class="hasCutout ? 'h-[76%]' : 'top-[39%] h-[48%]'"
                 data-poster-person
             >
                 <img
                     v-if="hasCutout"
-                    :src="member.photo_cutout_url"
+                    :src="posterUrl"
                     :alt="fullName"
                     class="member-poster__cutout absolute inset-0 h-full w-full object-contain object-bottom"
                     :loading="index < 3 ? 'eager' : 'lazy'"
@@ -139,7 +198,7 @@ onBeforeUnmount(() => {
                 >
                 <img
                     v-else
-                    :src="member.photo_url"
+                    :src="posterUrl"
                     :alt="fullName"
                     class="member-poster__regular absolute inset-0 h-full w-full object-cover object-[50%_25%]"
                     :loading="index < 3 ? 'eager' : 'lazy'"

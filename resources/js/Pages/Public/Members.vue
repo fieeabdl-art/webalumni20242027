@@ -1,11 +1,12 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, defineAsyncComponent, ref } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import PublicLayout from '../../Layouts/PublicLayout.vue';
 import SectionEyebrow from '../../Components/SectionEyebrow.vue';
 import SearchFilter from '../../Components/SearchFilter.vue';
 import MemberPoster from '../../Components/MemberPoster.vue';
-import MemberDetailLightbox from '../../Components/MemberDetailLightbox.vue';
+
+const MemberDetailLightbox = defineAsyncComponent(() => import('../../Components/MemberDetailLightbox.vue'));
 
 const props = defineProps({
     site: { type: Object, default: () => ({}) },
@@ -18,6 +19,7 @@ const search = ref('');
 const selectedMajor = ref('');
 const selectedClass = ref('');
 const selectedIndex = ref(-1);
+const memberOriginRect = ref(null);
 const isLightboxOpen = computed(() => selectedIndex.value >= 0);
 
 const filteredMembers = computed(() => props.members.filter((member) => {
@@ -28,8 +30,9 @@ const filteredMembers = computed(() => props.members.filter((member) => {
         && (!selectedClass.value || member.class_name === selectedClass.value);
 }));
 
-function openMember(member) {
+function openMember({ member, originRect }) {
     selectedIndex.value = props.members.findIndex((item) => item.id === member.id);
+    memberOriginRect.value = originRect;
 }
 
 function navigateMember(direction) {
@@ -101,6 +104,7 @@ function closeLightbox() {
             :members="members"
             :index="selectedIndex"
             :open="isLightboxOpen"
+            :origin-rect="memberOriginRect"
             @close="closeLightbox"
             @navigate="navigateMember"
         />

@@ -1,16 +1,24 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { ArrowLeft, ArrowRight, ArrowUpRight, X } from '@lucide/vue';
+import gsap from 'gsap';
 
 const props = defineProps({
     members: { type: Array, default: () => [] },
     index: { type: Number, default: -1 },
     open: { type: Boolean, default: false },
+    originRect: { type: Object, default: null },
 });
 
 const emit = defineEmits(['close', 'navigate']);
 const dialog = ref(null);
+const imageFrame = ref(null);
+const imageLoaded = ref(false);
+const imageFailed = ref(false);
 const activeMember = computed(() => props.members[props.index] ?? null);
+let closeAnimation;
+let prefersReducedMotion = false;
+let isClosing = false;
 
 watch(() => props.open, async (isOpen) => {
     await nextTick();
@@ -20,12 +28,52 @@ watch(() => props.open, async (isOpen) => {
     }
 
     if (isOpen && !dialog.value.open) {
+        prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        isClosing = false;
         dialog.value.showModal();
         dialog.value.querySelector('[data-dialog-close]')?.focus();
+
+        if (!prefersReducedMotion && props.originRect && imageFrame.value) {
+            const destination = imageFrame.value.getBoundingClientRect();
+
+            if (destination.width && destination.height) {
+                gsap.fromTo(imageFrame.value, {
+                    x: props.originRect.left - destination.left,
+                    y: props.originRect.top - destination.top,
+                    scaleX: props.originRect.width / destination.width,
+                    scaleY: props.originRect.height / destination.height,
+                    opacity: 0.82,
+                    transformOrigin: 'top left',
+                }, {
+                    x: 0,
+                    y: 0,
+                    scaleX: 1,
+                    scaleY: 1,
+                    opacity: 1,
+                    duration: 0.6,
+                    ease: 'power3.out',
+                    clearProps: 'transform',
+                });
+            }
+        }
     } else if (!isOpen && dialog.value.open) {
         dialog.value.close();
     }
-}, { flush: 'post' });
+}, { flush: 'post', immediate: true });
+
+watch(() => activeMember.value?.original_url, async (url) => {
+    imageLoaded.value = !url;
+    imageFailed.value = false;
+
+    if (url) {
+        await nextTick();
+
+        const image = imageFrame.value?.querySelector('img');
+        if (image?.complete && image.naturalWidth > 0) {
+            imageLoaded.value = true;
+        }
+    }
+}, { immediate: true });
 
 function handleKeydown(event) {
     if (event.key === 'ArrowLeft') {
@@ -41,10 +89,59 @@ function handleKeydown(event) {
 }
 
 function closeDialog() {
+    if (isClosing) {
+        return;
+    }
+
+    isClosing = true;
+
+    if (!prefersReducedMotion && props.originRect && imageFrame.value && dialog.value?.open) {
+        const current = imageFrame.value.getBoundingClientRect();
+
+        if (current.width && current.height) {
+            closeAnimation = gsap.to(imageFrame.value, {
+                x: props.originRect.left - current.left,
+                y: props.originRect.top - current.top,
+                scaleX: props.originRect.width / current.width,
+                scaleY: props.originRect.height / current.height,
+                opacity: 0.82,
+                transformOrigin: 'top left',
+                duration: 0.55,
+                ease: 'power3.out',
+                onComplete: () => emit('close'),
+            });
+
+            return;
+        }
+    }
+
     emit('close');
 }
 
+let touchStartX = null;
+
+function handleTouchStart(event) {
+    touchStartX = event.changedTouches[0]?.clientX ?? null;
+}
+
+function handleTouchEnd(event) {
+    const touchEndX = event.changedTouches[0]?.clientX;
+
+    if (touchStartX === null || touchEndX === undefined) {
+        return;
+    }
+
+    const distance = touchEndX - touchStartX;
+    if (Math.abs(distance) >= 48) {
+        emit('navigate', distance < 0 ? 1 : -1);
+    }
+
+    touchStartX = null;
+}
+
 onBeforeUnmount(() => {
+    closeAnimation?.kill();
+
     if (dialog.value?.open) {
         dialog.value.close();
     }
@@ -55,21 +152,33 @@ onBeforeUnmount(() => {
     <dialog
         ref="dialog"
         class="member-lightbox m-auto max-h-[92svh] w-[min(94vw,1100px)] max-w-none overflow-y-auto border border-white/15 bg-[#151515] p-0 text-[#f5f2ec] shadow-2xl"
+        role="dialog"
+        aria-modal="true"
         aria-labelledby="member-lightbox-title"
         @cancel.prevent="closeDialog"
         @keydown="handleKeydown"
         @click.self="closeDialog"
     >
         <div v-if="activeMember" class="relative grid min-h-[min(82svh,720px)] lg:grid-cols-[1fr_0.9fr]">
-            <div class="relative min-h-[52svh] bg-[#211d19] lg:min-h-[680px]">
+            <div
+                ref="imageFrame"
+                class="member-lightbox__image-frame relative min-h-[52svh] overflow-hidden bg-[#211d19] lg:min-h-[680px]"
+                @touchstart.passive="handleTouchStart"
+                @touchend.passive="handleTouchEnd"
+            >
                 <img
-                    v-if="activeMember.photo_url"
-                    :src="activeMember.photo_url"
-                    :alt="activeMember.name || 'DATA BELUM TERSEDIA'"
-                    class="absolute inset-0 h-full w-full object-contain"
+                    v-if="activeMember.original_url"
+                    :src="activeMember.original_url"
+                    :alt="`Foto ${activeMember.name || 'DATA BELUM TERSEDIA'}`"
+                    class="absolute inset-0 h-full w-full object-contain transition-[opacity,filter] duration-300"
+                    :class="imageLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-md'"
                     fetchpriority="high"
+                    @load="imageLoaded = true"
+                    @error="imageFailed = true"
                 >
-                <div v-else class="archive-grain absolute inset-0 grid place-items-center text-center text-xs font-semibold uppercase tracking-[0.16em] text-[#d7d1c7]">
+                <div v-if="!imageLoaded && !imageFailed && activeMember.original_url" class="archive-grain absolute inset-0 bg-[radial-gradient(ellipse_at_center,#403832,#211d19)]" aria-hidden="true"></div>
+                <p v-if="imageFailed" class="absolute inset-0 grid place-items-center px-4 text-center text-xs font-semibold uppercase tracking-[0.16em] text-[#d7d1c7]" role="status">Foto asli tidak dapat dimuat.</p>
+                <div v-if="!activeMember.original_url" class="archive-grain absolute inset-0 grid place-items-center text-center text-xs font-semibold uppercase tracking-[0.16em] text-[#d7d1c7]">
                     DATA BELUM TERSEDIA
                 </div>
             </div>
@@ -135,6 +244,7 @@ onBeforeUnmount(() => {
                 </nav>
             </div>
         </div>
+        <p class="sr-only" aria-live="polite" aria-atomic="true">{{ activeMember?.name || '' }} · {{ index + 1 }} dari {{ members.length }}</p>
     </dialog>
 </template>
 
@@ -161,6 +271,10 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
     .member-lightbox[open] {
         animation: none;
+    }
+
+    .member-lightbox__image-frame img {
+        transition-duration: 0.01ms;
     }
 }
 </style>

@@ -75,6 +75,22 @@ class AdminMemberControllerTest extends TestCase
                 ->where('majors', Member::MAJORS));
     }
 
+    public function test_member_index_exposes_cutout_status_for_each_member(): void
+    {
+        Member::query()->create([
+            'name' => 'Anggota Dengan Cutout',
+            'photo_cutout' => 'yearbook/members/cutouts/ada.png',
+        ]);
+        Member::query()->create(['name' => 'Anggota Tanpa Cutout']);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->get(route('admin.members.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Members/Index')
+                ->where('members.0.poster_uses_cutout', true)
+                ->where('members.1.poster_uses_cutout', false));
+    }
+
     public function test_updating_a_legacy_member_preserves_its_class_column(): void
     {
         $member = Member::query()->create([
@@ -119,6 +135,87 @@ class AdminMemberControllerTest extends TestCase
         $member = Member::query()->where('name', 'Anggota Cutout')->firstOrFail();
         Storage::disk('public')->assertExists($member->photo_cutout);
         $this->assertStringStartsWith('http', $member->photo_cutout_url);
+        $this->assertNull($member->original_url);
+        $this->assertSame($member->photo_cutout_url, $member->poster_url);
+        $this->assertTrue($member->poster_uses_cutout);
+    }
+
+    public function test_admin_can_save_an_original_photo_and_cutout_together(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $response = $this->actingAs($admin)->post(route('admin.members.store'), [
+            'name' => 'Anggota Dua Foto',
+            'major' => 'RPL',
+            'status' => true,
+            'sort_order' => 0,
+            'photo' => $this->pngUpload('original.png'),
+            'photo_cutout' => $this->pngUpload('cutout.png'),
+        ]);
+
+        $response->assertRedirect(route('admin.members.index'));
+
+        $member = Member::query()->where('name', 'Anggota Dua Foto')->firstOrFail();
+        Storage::disk('public')->assertExists($member->photo_path);
+        Storage::disk('public')->assertExists($member->photo_cutout);
+        $this->assertSame(asset('storage/'.$member->photo_path), $member->original_url);
+        $this->assertSame(asset('storage/'.$member->photo_cutout), $member->poster_url);
+        $this->assertTrue($member->poster_uses_cutout);
+    }
+
+    public function test_admin_can_upload_an_original_photo_without_a_cutout(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)->post(route('admin.members.store'), [
+            'name' => 'Anggota Foto Asli',
+            'major' => 'RPL',
+            'status' => true,
+            'sort_order' => 0,
+            'photo' => $this->pngUpload('original.png'),
+        ])->assertRedirect(route('admin.members.index'));
+
+        $member = Member::query()->where('name', 'Anggota Foto Asli')->firstOrFail();
+        Storage::disk('public')->assertExists($member->photo_path);
+        $this->assertNull($member->photo_cutout);
+        $this->assertSame($member->original_url, $member->poster_url);
+        $this->assertFalse($member->poster_uses_cutout);
+    }
+
+    public function test_original_photo_upload_rejects_an_invalid_mime_type(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)->post(route('admin.members.store'), [
+            'name' => 'Anggota MIME Salah',
+            'major' => 'RPL',
+            'status' => true,
+            'sort_order' => 0,
+            'photo' => $this->pngUpload('original.png')->mimeType('image/gif'),
+        ])->assertSessionHasErrors('photo');
+
+        $this->assertDatabaseMissing('members', ['name' => 'Anggota MIME Salah']);
+        $this->assertSame([], Storage::disk('public')->allFiles('yearbook/members'));
+    }
+
+    public function test_original_photo_upload_rejects_images_over_five_megabytes(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)->post(route('admin.members.store'), [
+            'name' => 'Anggota Foto Besar',
+            'major' => 'RPL',
+            'status' => true,
+            'sort_order' => 0,
+            'photo' => $this->pngUpload('original.png')->size(5121),
+        ])->assertSessionHasErrors('photo');
+
+        $this->assertDatabaseMissing('members', ['name' => 'Anggota Foto Besar']);
+        $this->assertSame([], Storage::disk('public')->allFiles('yearbook/members'));
     }
 
     public function test_member_cutout_upload_rejects_a_file_with_an_invalid_mime_type(): void
@@ -170,12 +267,13 @@ class AdminMemberControllerTest extends TestCase
                 'major' => 'RPL',
                 'status' => true,
                 'sort_order' => 0,
+                'photo' => $this->pngUpload('original.png'),
                 'photo_cutout' => $this->pngUpload('cutout.png'),
             ])
             ->assertForbidden();
 
         $this->assertDatabaseMissing('members', ['name' => 'Anggota Terlarang']);
-        $this->assertSame([], Storage::disk('public')->allFiles('yearbook/members/cutouts'));
+        $this->assertSame([], Storage::disk('public')->allFiles('yearbook/members'));
     }
 
     public function test_replacing_a_member_cutout_removes_the_previous_file(): void
@@ -201,6 +299,103 @@ class AdminMemberControllerTest extends TestCase
 
         Storage::disk('public')->assertMissing($oldPath);
         Storage::disk('public')->assertExists($member->fresh()->photo_cutout);
+    }
+
+    public function test_replacing_a_member_original_photo_removes_the_previous_file(): void
+    {
+        Storage::fake('public');
+        $oldPath = 'yearbook/members/old.png';
+        Storage::disk('public')->put($oldPath, 'old photo');
+        $member = Member::query()->create([
+            'name' => 'Anggota Foto',
+            'major' => 'RPL',
+            'photo_path' => $oldPath,
+        ]);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->put(route('admin.members.update', $member), [
+                'name' => $member->name,
+                'major' => 'RPL',
+                'status' => true,
+                'sort_order' => 0,
+                'photo' => $this->pngUpload('new-photo.png'),
+            ])
+            ->assertRedirect(route('admin.members.index'));
+
+        Storage::disk('public')->assertMissing($oldPath);
+        Storage::disk('public')->assertExists($member->fresh()->photo_path);
+    }
+
+    public function test_removing_a_member_original_photo_deletes_the_file_and_clears_its_path(): void
+    {
+        Storage::fake('public');
+        $oldPath = 'yearbook/members/old.png';
+        Storage::disk('public')->put($oldPath, 'old photo');
+        $member = Member::query()->create([
+            'name' => 'Anggota Tanpa Foto',
+            'major' => 'RPL',
+            'photo_path' => $oldPath,
+        ]);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->put(route('admin.members.update', $member), [
+                'name' => $member->name,
+                'major' => 'RPL',
+                'status' => true,
+                'sort_order' => 0,
+                'remove_photo' => true,
+            ])
+            ->assertRedirect(route('admin.members.index'));
+
+        Storage::disk('public')->assertMissing($oldPath);
+        $this->assertNull($member->fresh()->photo_path);
+    }
+
+    public function test_removing_a_member_cutout_deletes_the_file_and_clears_its_path(): void
+    {
+        Storage::fake('public');
+        $oldPath = 'yearbook/members/cutouts/old.png';
+        Storage::disk('public')->put($oldPath, 'old cutout');
+        $member = Member::query()->create([
+            'name' => 'Anggota Tanpa Cutout',
+            'major' => 'RPL',
+            'photo_cutout' => $oldPath,
+        ]);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->put(route('admin.members.update', $member), [
+                'name' => $member->name,
+                'major' => 'RPL',
+                'status' => true,
+                'sort_order' => 0,
+                'remove_photo_cutout' => true,
+            ])
+            ->assertRedirect(route('admin.members.index'));
+
+        Storage::disk('public')->assertMissing($oldPath);
+        $this->assertNull($member->fresh()->photo_cutout);
+    }
+
+    public function test_deleting_a_member_removes_both_photo_files(): void
+    {
+        Storage::fake('public');
+        $originalPath = 'yearbook/members/original.png';
+        $cutoutPath = 'yearbook/members/cutouts/cutout.png';
+        Storage::disk('public')->put($originalPath, 'original');
+        Storage::disk('public')->put($cutoutPath, 'cutout');
+        $member = Member::query()->create([
+            'name' => 'Anggota Dihapus',
+            'photo_path' => $originalPath,
+            'photo_cutout' => $cutoutPath,
+        ]);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))
+            ->delete(route('admin.members.destroy', $member))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('members', ['id' => $member->id]);
+        Storage::disk('public')->assertMissing($originalPath);
+        Storage::disk('public')->assertMissing($cutoutPath);
     }
 
     private function pngUpload(string $filename): UploadedFile
