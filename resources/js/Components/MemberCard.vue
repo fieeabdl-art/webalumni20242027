@@ -1,4 +1,6 @@
 <script setup>
+import { Link } from '@inertiajs/vue3';
+
 defineProps({
     member: { type: Object, required: true },
 });
@@ -12,7 +14,7 @@ defineProps({
             <a v-if="member.instagram" :href="member.instagram" target="_blank" rel="noreferrer" class="focus-ring absolute bottom-3 right-3 bg-[#f5f2ec] px-3 py-2 text-[8px] font-semibold uppercase tracking-[0.12em] opacity-0 transition-opacity group-hover:opacity-100">Instagram</a>
         </div>
         <div class="mt-4 flex items-baseline justify-between gap-3">
-            <h2 class="font-editorial text-xl">{{ member.name }}</h2>
+            <h2 class="font-editorial text-xl"><Link :href="`/anggota/${member.id}`" class="focus-ring hover:text-[#8b4b45]">{{ member.name }}</Link></h2>
             <span v-if="member.nickname" class="text-[9px] text-[#6b6b65]">“{{ member.nickname }}”</span>
         </div>
         <p class="mt-1 text-[9px] uppercase tracking-[0.12em] text-[#6b6b65]">{{ member.class_name || 'DATA BELUM TERSEDIA' }} · {{ member.major || 'DATA BELUM TERSEDIA' }}</p>

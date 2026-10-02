@@ -16,4 +16,23 @@ class MemberController extends Controller
             'majors' => Member::query()->where('status', true)->whereNotNull('major')->distinct()->orderBy('major')->pluck('major'),
         ]);
     }
+
+    public function show(Member $anggota): Response
+    {
+        abort_unless($anggota->status, 404);
+
+        return Inertia::render('Public/Member', [
+            'member' => [
+                'id' => $anggota->id,
+                'name' => $anggota->name,
+                'nickname' => $anggota->nickname,
+                'class_name' => $anggota->class_name,
+                'major' => $anggota->major,
+                'photo_url' => $anggota->photo_url,
+                'quote' => $anggota->quote,
+                'bio' => $anggota->bio,
+                'instagram' => $anggota->instagram,
+            ],
+        ]);
+    }
 }

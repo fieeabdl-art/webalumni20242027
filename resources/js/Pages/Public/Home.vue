@@ -184,7 +184,7 @@ onUnmounted(() => {
                             <img v-if="member.photo_url" :src="member.photo_url" :alt="member.name" loading="lazy" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]">
                             <div v-else class="archive-grain grid h-full place-items-center text-[9px] uppercase tracking-[0.18em] text-[#6b6b65]">DATA BELUM TERSEDIA</div>
                         </div>
-                        <p class="mt-4 font-editorial text-xl">{{ member.name }}</p>
+                        <p class="mt-4 font-editorial text-xl"><Link :href="`/anggota/${member.id}`" class="focus-ring hover:text-[#8b4b45]">{{ member.name }}</Link></p>
                         <p class="mt-1 text-[9px] uppercase tracking-[0.12em] text-[#6b6b65]">{{ member.class_name || 'DATA BELUM TERSEDIA' }} · {{ member.major || 'DATA BELUM TERSEDIA' }}</p>
                     </article>
                 </div>
