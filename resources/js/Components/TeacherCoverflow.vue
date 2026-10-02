@@ -16,17 +16,6 @@ const section = ref(null);
 const slider = ref(null);
 const activeIndex = ref(0);
 const activeTeacher = computed(() => props.teachers[activeIndex.value] ?? null);
-const visibleSlides = computed(() => {
-    if (props.teachers.length >= 8) {
-        return 5;
-    }
-
-    if (props.teachers.length >= 6) {
-        return 4;
-    }
-
-    return 3;
-});
 let swiperInstance;
 let animationContext;
 
@@ -60,9 +49,10 @@ async function initializeSlider() {
             },
             effect: 'coverflow',
             grabCursor: true,
-            initialSlide: props.teachers.length >= 5 ? 0 : Math.floor(props.teachers.length / 2),
+            initialSlide: Math.floor(props.teachers.length / 2),
             keyboard: { enabled: true, onlyInViewport: true },
-            loop: props.teachers.length >= 5,
+            loop: false,
+            rewind: props.teachers.length >= 5,
             slidesPerView: 'auto',
             speed: prefersReducedMotion ? 0 : 700,
             breakpoints: {
@@ -234,7 +224,6 @@ onBeforeUnmount(() => {
                     <div
                         ref="slider"
                         class="swiper teacher-coverflow__swiper"
-                        :style="{ '--teacher-visible-slides': visibleSlides }"
                         role="region"
                         aria-roledescription="carousel"
                         aria-label="Guru kami"
@@ -341,13 +330,14 @@ onBeforeUnmount(() => {
 }
 
 .teacher-coverflow__mask {
-    overflow: hidden;
+    overflow: visible;
     padding: 0.75rem 0 1.5rem;
 }
 
 .teacher-coverflow__swiper {
+    width: 52%;
+    margin-inline: auto;
     overflow: visible;
-    width: 100%;
 }
 
 .teacher-coverflow__swiper :deep(.swiper-wrapper) {
@@ -362,8 +352,11 @@ onBeforeUnmount(() => {
 }
 
 .teacher-slide {
-    width: calc(100% / var(--teacher-visible-slides) + 1px);
     z-index: 0;
+}
+
+.teacher-slide.swiper-slide {
+    width: clamp(185px, 17vw, 245px);
 }
 
 .teacher-slide__surface {
@@ -426,13 +419,32 @@ onBeforeUnmount(() => {
 }
 
 @media (min-width: 640px) and (max-width: 1199px) {
-    .teacher-slide {
+    .teacher-coverflow__mask {
+        width: 90%;
+        margin-inline: auto;
+        overflow: hidden;
+    }
+
+    .teacher-coverflow__swiper {
+        width: 100%;
+    }
+
+    .teacher-slide.swiper-slide {
         width: calc(100% / 3 + 1px);
     }
 }
 
 @media (max-width: 767px) {
-    .teacher-slide {
+    .teacher-coverflow__mask {
+        width: 100%;
+        overflow: visible;
+    }
+
+    .teacher-coverflow__swiper {
+        width: 100%;
+    }
+
+    .teacher-slide.swiper-slide {
         width: 72vw;
     }
 }
