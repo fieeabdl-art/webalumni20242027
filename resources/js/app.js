@@ -15,4 +15,10 @@ createInertiaApp({
 	progress: {
 		color: '#A38B68',
 	},
+	defaults: {
+		visitOptions: (href, options) => ({
+			...options,
+			viewTransition: options.method === 'get' && href.startsWith('/'),
+		}),
+	},
 });
