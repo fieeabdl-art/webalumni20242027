@@ -43,6 +43,7 @@ onUnmounted(() => lightbox?.destroy());
         <a
             v-for="(memory, index) in memories"
             :key="memory.id"
+            :id="memory.slug"
             data-lightbox
             :href="memory.image_url"
             :data-pswp-width="1600"
