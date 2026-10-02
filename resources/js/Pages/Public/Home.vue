@@ -4,7 +4,6 @@ import { Link } from '@inertiajs/vue3';
 import { ArrowDown, ArrowUpRight } from '@lucide/vue';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import Lenis from 'lenis';
 import PublicLayout from '../../Layouts/PublicLayout.vue';
 import SectionEyebrow from '../../Components/SectionEyebrow.vue';
 
@@ -22,16 +21,9 @@ const props = defineProps({
 const hero = ref(null);
 const heroImage = ref(null);
 const heroTitle = computed(() => props.home.hero_title || 'DATA BELUM TERSEDIA');
-let lenis;
-let lenisTick;
 let animationContext;
 
 onMounted(() => {
-    lenis = new Lenis({ duration: 1.05, smoothWheel: true });
-    lenisTick = (time) => lenis?.raf(time * 1000);
-    gsap.ticker.add(lenisTick);
-    gsap.ticker.lagSmoothing(0);
-
     const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isMobile = window.matchMedia('(max-width: 767px)').matches;
 
@@ -94,8 +86,6 @@ onMounted(() => {
 
 onUnmounted(() => {
     animationContext?.revert();
-    gsap.ticker.remove(lenisTick);
-    lenis?.destroy();
 });
 </script>
 

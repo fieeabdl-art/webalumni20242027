@@ -1,8 +1,12 @@
 <script setup>
-import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import { ArrowUpRight, Menu, X } from '@lucide/vue';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
+
+gsap.registerPlugin(ScrollTrigger);
 
 defineProps({
     site: { type: Object, default: () => ({}) },
@@ -11,10 +15,13 @@ defineProps({
 const page = usePage();
 const scrolled = ref(false);
 const menuOpen = ref(false);
+const scrollProgress = ref(0);
 const preloader = ref(null);
 const isPreloaderVisible = ref(false);
 let preloaderContext;
 let preloaderTimeout;
+let lenis;
+let lenisTick;
 const links = [
     { label: 'Beranda', href: '/' },
     { label: 'Tentang Kami', href: '/tentang-kami' },
@@ -25,14 +32,39 @@ const links = [
 
 const updateScroll = () => {
     scrolled.value = window.scrollY > 32;
+    const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+    scrollProgress.value = scrollableHeight > 0
+        ? Math.min(1, Math.max(0, window.scrollY / scrollableHeight))
+        : 0;
 };
 
 const closeMenu = () => {
     menuOpen.value = false;
 };
 
+const handleMenuKeydown = (event) => {
+    if (event.key === 'Escape') {
+        closeMenu();
+    }
+};
+
+watch(menuOpen, (isOpen) => {
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+});
+
 onMounted(async () => {
     window.addEventListener('scroll', updateScroll, { passive: true });
+    window.addEventListener('resize', updateScroll, { passive: true });
+    window.addEventListener('keydown', handleMenuKeydown);
+    updateScroll();
+
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        lenis = new Lenis({ duration: 1.05, smoothWheel: true });
+        lenis.on('scroll', ScrollTrigger.update);
+        lenisTick = (time) => lenis?.raf(time * 1000);
+        gsap.ticker.add(lenisTick);
+        gsap.ticker.lagSmoothing(0);
+    }
 
     try {
         if (window.sessionStorage.getItem('yearbook-preloader-shown')) {
@@ -94,8 +126,16 @@ onMounted(async () => {
 
 onUnmounted(() => {
     window.removeEventListener('scroll', updateScroll);
+    window.removeEventListener('resize', updateScroll);
+    window.removeEventListener('keydown', handleMenuKeydown);
+    document.body.style.overflow = '';
     window.clearTimeout(preloaderTimeout);
     preloaderContext?.revert();
+    if (lenisTick) {
+        gsap.ticker.remove(lenisTick);
+        gsap.ticker.lagSmoothing(500, 33);
+    }
+    lenis?.destroy();
 });
 </script>
 
@@ -141,6 +181,7 @@ onUnmounted(() => {
                     class="focus-ring grid size-11 place-items-center lg:hidden"
                     :aria-label="menuOpen ? 'Tutup navigasi' : 'Buka navigasi'"
                     :aria-expanded="menuOpen"
+                    aria-controls="public-mobile-menu"
                     @click="menuOpen = !menuOpen"
                 >
                     <X v-if="menuOpen" :size="19" />
@@ -150,7 +191,7 @@ onUnmounted(() => {
         </header>
 
         <Transition name="menu">
-            <div v-if="menuOpen" class="fixed inset-0 z-30 flex flex-col justify-center bg-[#f5f2ec] px-8 pt-20 lg:hidden">
+            <div v-if="menuOpen" id="public-mobile-menu" class="fixed inset-0 z-30 flex flex-col justify-center bg-[#f5f2ec] px-8 pt-20 lg:hidden">
                 <div class="mb-8 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#a38b68]">Jelajahi arsip</div>
                 <Link
                     v-for="(item, index) in links"
@@ -163,6 +204,10 @@ onUnmounted(() => {
                 </Link>
             </div>
         </Transition>
+
+        <div class="fixed inset-x-0 top-0 z-50 h-px bg-white/20" role="progressbar" aria-label="Kemajuan halaman" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="Math.round(scrollProgress * 100)">
+            <span class="block h-full origin-left bg-[#a38b68]" :style="{ transform: `scaleX(${scrollProgress})` }"></span>
+        </div>
 
         <main><slot /></main>
 
