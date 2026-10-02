@@ -12,8 +12,8 @@ class MemberController extends Controller
     {
         return Inertia::render('Public/Members', [
             'members' => Member::query()->where('status', true)->orderBy('sort_order')->orderBy('name')->get(),
-            'classes' => Member::query()->where('status', true)->whereNotNull('class_name')->distinct()->orderBy('class_name')->pluck('class_name'),
             'majors' => Member::query()->where('status', true)->whereNotNull('major')->distinct()->orderBy('major')->pluck('major'),
+            'classes' => Member::query()->where('status', true)->whereNotNull('class_name')->distinct()->orderBy('class_name')->pluck('class_name'),
         ]);
     }
 

@@ -39,4 +39,41 @@ class MemberControllerTest extends TestCase
 
         $this->get(route('members.show', $member))->assertNotFound();
     }
+
+    public function test_member_archive_keeps_legacy_class_data_and_filters_by_major_values(): void
+    {
+        Member::query()->create([
+            'name' => 'Anggota Arsip',
+            'class_name' => 'Kelas Lama',
+            'major' => 'rpl',
+            'status' => true,
+            'sort_order' => 0,
+        ]);
+
+        $this->get(route('members'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Public/Members')
+                ->where('majors.0', 'rpl')
+                ->where('classes.0', 'Kelas Lama')
+                ->where('members.0.class_name', 'Kelas Lama')
+                ->where('members.0.major', 'rpl')
+                ->where('members.0.photo_cutout_url', null));
+    }
+
+    public function test_home_member_preview_includes_the_public_cutout_image_url(): void
+    {
+        Member::query()->create([
+            'name' => 'Anggota Poster',
+            'major' => 'RPL',
+            'photo_cutout' => 'yearbook/members/cutouts/member.png',
+            'status' => true,
+            'sort_order' => 0,
+        ]);
+
+        $this->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Public/Home')
+                ->where('members.0.photo_cutout_url', asset('storage/yearbook/members/cutouts/member.png')));
+    }
 }

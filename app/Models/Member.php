@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'nickname', 'class_name', 'major', 'photo_path', 'quote', 'bio', 'instagram', 'status', 'sort_order'])]
+#[Fillable(['name', 'nickname', 'class_name', 'major', 'photo_path', 'photo_cutout', 'quote', 'bio', 'instagram', 'status', 'sort_order'])]
 class Member extends Model
 {
-    protected $appends = ['photo_url'];
+    public const MAJORS = ['PPLG', 'TKR', 'AKL', 'RPL'];
+
+    protected $appends = ['photo_url', 'photo_cutout_url'];
 
     protected function casts(): array
     {
@@ -18,6 +19,11 @@ class Member extends Model
 
     public function getPhotoUrlAttribute(): ?string
     {
-        return $this->photo_path ? Storage::disk('public')->url($this->photo_path) : null;
+        return $this->photo_path ? asset('storage/'.$this->photo_path) : null;
+    }
+
+    public function getPhotoCutoutUrlAttribute(): ?string
+    {
+        return $this->photo_cutout ? asset('storage/'.$this->photo_cutout) : null;
     }
 }

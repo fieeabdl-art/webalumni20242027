@@ -7,6 +7,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import PublicLayout from '../../Layouts/PublicLayout.vue';
 import SectionEyebrow from '../../Components/SectionEyebrow.vue';
 import CorkboardArchive from '../../Components/CorkboardArchive.vue';
+import MemberPoster from '../../Components/MemberPoster.vue';
+import MemberDetailLightbox from '../../Components/MemberDetailLightbox.vue';
 import TeacherCoverflow from '../../Components/TeacherCoverflow.vue';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -25,7 +27,25 @@ const hero = ref(null);
 const heroImage = ref(null);
 const statsSection = ref(null);
 const heroTitle = computed(() => props.home.hero_title || 'DATA BELUM TERSEDIA');
+const selectedMemberIndex = ref(-1);
+const isMemberLightboxOpen = computed(() => selectedMemberIndex.value >= 0);
 let animationContext;
+
+function openMember(member) {
+    selectedMemberIndex.value = props.members.findIndex((item) => item.id === member.id);
+}
+
+function navigateMember(direction) {
+    if (props.members.length < 2) {
+        return;
+    }
+
+    selectedMemberIndex.value = (selectedMemberIndex.value + direction + props.members.length) % props.members.length;
+}
+
+function closeMemberLightbox() {
+    selectedMemberIndex.value = -1;
+}
 
 onMounted(() => {
     const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -179,20 +199,33 @@ onUnmounted(() => {
             <div data-scroll-reveal class="mx-auto max-w-[1400px]">
                 <div class="flex flex-wrap items-end justify-between gap-6">
                     <div><SectionEyebrow number="03" label="Wajah di dalam cerita" /><h2 class="mt-5 font-editorial text-4xl sm:text-6xl">Inilah kami.</h2></div>
-                    <Link href="/anggota" class="focus-ring inline-flex items-center gap-2 border-b border-[#242424] pb-2 text-[9px] font-semibold uppercase tracking-[0.16em]">Lihat semua anggota <ArrowUpRight :size="14" /></Link>
+                    <Link href="/anggota" class="focus-ring inline-flex items-center gap-2 border-b border-[#171717] pb-2 text-[9px] font-semibold uppercase tracking-[0.16em]">LIHAT SEMUA ANGGOTA <ArrowUpRight :size="14" /></Link>
                 </div>
-                <div v-if="members.length" class="mt-12 grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-                    <article v-for="(member, index) in members" :key="member.id" class="group" :class="index % 3 === 1 ? 'lg:translate-y-12' : ''">
-                        <div class="relative aspect-[4/5] overflow-hidden bg-[#ded8cd]">
-                            <img v-if="member.photo_url" :src="member.photo_url" :alt="member.name" loading="lazy" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]">
-                            <div v-else class="archive-grain grid h-full place-items-center text-[9px] uppercase tracking-[0.18em] text-[#6b6b65]">DATA BELUM TERSEDIA</div>
-                        </div>
-                        <p class="mt-4 font-editorial text-xl"><Link :href="`/anggota/${member.id}`" class="focus-ring hover:text-[#8b4b45]">{{ member.name }}</Link></p>
-                        <p class="mt-1 text-[9px] uppercase tracking-[0.12em] text-[#6b6b65]">{{ member.class_name || 'DATA BELUM TERSEDIA' }} · {{ member.major || 'DATA BELUM TERSEDIA' }}</p>
-                    </article>
+                <div
+                    v-if="members.length"
+                    class="mt-12 grid grid-cols-1 justify-items-center gap-3"
+                    :class="members.length === 1 ? 'sm:grid-cols-1' : 'sm:grid-cols-2 lg:grid-cols-4'"
+                >
+                    <MemberPoster
+                        v-for="(member, index) in members"
+                        :key="member.id"
+                        :member="member"
+                        :site="site"
+                        variant="compact"
+                        :index="index"
+                        :class="members.length === 1 ? 'w-full max-w-[420px]' : index % 3 === 1 ? 'lg:translate-y-8' : ''"
+                        @open="openMember"
+                    />
                 </div>
                 <p v-else class="mt-12 border-y border-black/15 py-7 text-[10px] uppercase tracking-[0.16em] text-[#6b6b65]">DATA BELUM TERSEDIA</p>
             </div>
+            <MemberDetailLightbox
+                :members="members"
+                :index="selectedMemberIndex"
+                :open="isMemberLightboxOpen"
+                @close="closeMemberLightbox"
+                @navigate="navigateMember"
+            />
         </section>
 
         <div class="section-divider" aria-hidden="true"></div>
