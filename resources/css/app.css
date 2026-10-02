@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../js/**/*.vue';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, sans-serif;
+    --font-editorial: 'Playfair Display', Georgia, serif;
+}
+
+:root {
+    color-scheme: light;
+    --paper: #f5f2ec;
+    --cream: #ede8de;
+    --ink: #242424;
+    --black: #111111;
+    --muted: #6b6b65;
+    --earth: #a38b68;
+    --red: #8b4b45;
+}
+
+html {
+    scroll-behavior: smooth;
+    background: var(--paper);
+}
+
+body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+    background: var(--earth);
+    color: white;
+}
+
+.font-editorial {
+    font-family: 'Playfair Display', Georgia, serif;
+}
+
+.archive-grain {
+    background-image: radial-gradient(rgba(245, 242, 236, 0.09) 0.65px, transparent 0.65px);
+    background-size: 5px 5px;
+}
+
+.focus-ring:focus-visible {
+    outline: 2px solid var(--earth);
+    outline-offset: 4px;
+}
