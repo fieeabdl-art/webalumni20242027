@@ -5,6 +5,7 @@ import { ArrowUpRight, Menu, X } from '@lucide/vue';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
+import CustomCursor from '../Components/CustomCursor.vue';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -141,6 +142,8 @@ onUnmounted(() => {
 
 <template>
     <div class="min-h-screen">
+        <CustomCursor />
+
         <div
             v-if="isPreloaderVisible"
             ref="preloader"

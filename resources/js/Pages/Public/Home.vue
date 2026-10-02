@@ -132,7 +132,7 @@ onUnmounted(() => {
                     <p data-reveal class="mb-5 text-[9px] font-semibold uppercase tracking-[0.24em] text-white/65 sm:text-[10px]">Arsip digital · {{ site.cohort_year || 'DATA BELUM TERSEDIA' }}</p>
                     <h1 data-reveal class="max-w-5xl font-editorial text-[clamp(3.25rem,9vw,8.6rem)] leading-[0.9]">{{ heroTitle }}</h1>
                     <p data-reveal class="mt-6 max-w-lg text-sm leading-7 text-white/75 sm:mt-8 sm:text-base">{{ home.hero_subtitle || 'DATA BELUM TERSEDIA' }}</p>
-                    <a data-reveal href="#cerita" class="focus-ring mt-8 inline-flex min-h-12 items-center gap-4 border border-white/40 px-5 text-[9px] font-semibold uppercase tracking-[0.18em] transition-colors hover:bg-white hover:text-[#242424] sm:mt-10">
+                    <a data-reveal data-magnetic href="#cerita" class="focus-ring mt-8 inline-flex min-h-12 items-center gap-4 border border-white/40 px-5 text-[9px] font-semibold uppercase tracking-[0.18em] transition-colors hover:bg-white hover:text-[#242424] sm:mt-10">
                         {{ home.cta_text || 'JELAJAHI CERITA' }} <ArrowDown :size="15" />
                     </a>
                 </div>
