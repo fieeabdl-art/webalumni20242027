@@ -20,6 +20,7 @@ const props = defineProps({
 
 const hero = ref(null);
 const heroImage = ref(null);
+const statsSection = ref(null);
 const heroTitle = computed(() => props.home.hero_title || 'DATA BELUM TERSEDIA');
 let animationContext;
 
@@ -56,6 +57,28 @@ onMounted(() => {
                 scrollTrigger: { trigger: element, start: 'top 88%' },
             });
         });
+
+        if (statsSection.value) {
+            gsap.utils.toArray('[data-counter]', statsSection.value).forEach((element, index) => {
+                const value = Number(element.dataset.counter);
+
+                gsap.fromTo(element, {
+                    textContent: 0,
+                }, {
+                    textContent: value,
+                    duration: 1.1,
+                    delay: index * 0.08,
+                    snap: { textContent: 1 },
+                    ease: 'power3.out',
+                    immediateRender: false,
+                    scrollTrigger: {
+                        trigger: statsSection.value,
+                        start: 'top 86%',
+                        once: true,
+                    },
+                });
+            });
+        }
 
         if (heroImage.value) {
             gsap.timeline()
@@ -132,7 +155,7 @@ onUnmounted(() => {
         </section>
 
         <section class="bg-[#ede8de] px-6 py-16 sm:px-10 sm:py-20 lg:px-14">
-            <div class="mx-auto max-w-[1400px]">
+            <div ref="statsSection" class="mx-auto max-w-[1400px]">
                 <SectionEyebrow number="02" label="Yang pernah kita bagi" />
                 <div class="mt-10 grid grid-cols-2 gap-x-5 gap-y-10 border-t border-black/15 pt-7 md:grid-cols-4 md:gap-8">
                     <div v-for="item in [
@@ -141,16 +164,16 @@ onUnmounted(() => {
                         { label: 'Guru', value: stats.teachers },
                         { label: 'Kenangan', value: stats.memories },
                     ]" :key="item.label" class="min-h-24">
-                        <p class="font-editorial text-4xl sm:text-5xl">{{ Number.isInteger(item.value) ? item.value : '—' }}</p>
+                        <p v-if="Number.isInteger(item.value)" :data-counter="item.value" class="font-editorial text-4xl sm:text-5xl">{{ item.value }}</p>
+                        <p v-else class="font-editorial text-[9px] uppercase tracking-[0.12em] text-[#8b4b45]">DATA BELUM TERSEDIA</p>
                         <p class="mt-3 text-[9px] uppercase tracking-[0.16em] text-[#6b6b65]">{{ item.label }}</p>
-                        <span v-if="!Number.isInteger(item.value)" class="mt-2 block text-[8px] uppercase tracking-[0.12em] text-[#8b4b45]">Data belum tersedia</span>
                     </div>
                 </div>
             </div>
         </section>
 
         <section class="px-6 py-24 sm:px-10 sm:py-32 lg:px-14">
-            <div class="mx-auto max-w-[1400px]">
+            <div data-scroll-reveal class="mx-auto max-w-[1400px]">
                 <div class="flex flex-wrap items-end justify-between gap-6">
                     <div><SectionEyebrow number="03" label="Wajah di dalam cerita" /><h2 class="mt-5 font-editorial text-4xl sm:text-6xl">Inilah kami.</h2></div>
                     <Link href="/anggota" class="focus-ring inline-flex items-center gap-2 border-b border-[#242424] pb-2 text-[9px] font-semibold uppercase tracking-[0.16em]">Lihat semua anggota <ArrowUpRight :size="14" /></Link>
@@ -170,7 +193,7 @@ onUnmounted(() => {
         </section>
 
         <section class="bg-[#242424] px-6 py-24 text-[#f5f2ec] sm:px-10 sm:py-32 lg:px-14">
-            <div class="mx-auto max-w-[1400px]">
+            <div data-scroll-reveal class="mx-auto max-w-[1400px]">
                 <div class="flex flex-wrap items-end justify-between gap-6">
                     <div><SectionEyebrow number="04" label="Mereka yang membersamai" light /><h2 class="mt-5 font-editorial text-4xl sm:text-6xl">Guru kami.</h2></div>
                     <Link href="/guru" class="focus-ring inline-flex items-center gap-2 border-b border-white/50 pb-2 text-[9px] font-semibold uppercase tracking-[0.16em]">Kenali guru kami <ArrowUpRight :size="14" /></Link>
@@ -179,7 +202,7 @@ onUnmounted(() => {
                     <article v-for="teacher in teachers" :key="teacher.id" class="grid grid-cols-[92px_1fr] items-center gap-5 border-t border-white/20 py-5 sm:grid-cols-[120px_1fr]">
                         <div class="aspect-[4/5] overflow-hidden bg-white/10">
                             <img v-if="teacher.photo_url" :src="teacher.photo_url" :alt="teacher.name" loading="lazy" class="h-full w-full object-cover">
-                            <div v-else class="grid h-full place-items-center text-[8px] uppercase tracking-[0.1em] text-white/45">Belum ada foto</div>
+                            <div v-else class="grid h-full place-items-center text-[8px] uppercase tracking-[0.1em] text-white/45">DATA BELUM TERSEDIA</div>
                         </div>
                         <div><p class="font-editorial text-xl">{{ teacher.name }}</p><p class="mt-2 text-[9px] uppercase tracking-[0.12em] text-white/55">{{ teacher.subject || 'DATA BELUM TERSEDIA' }}</p></div>
                     </article>
@@ -189,7 +212,7 @@ onUnmounted(() => {
         </section>
 
         <section class="px-6 py-24 sm:px-10 sm:py-32 lg:px-14">
-            <div class="mx-auto max-w-[1400px]">
+            <div data-scroll-reveal class="mx-auto max-w-[1400px]">
                 <div class="flex flex-wrap items-end justify-between gap-6">
                     <div><SectionEyebrow number="05" label="Potongan yang tersimpan" /><h2 class="mt-5 font-editorial text-4xl sm:text-6xl">Kenangan kami.</h2></div>
                     <Link href="/kenangan" class="focus-ring inline-flex items-center gap-2 border-b border-[#242424] pb-2 text-[9px] font-semibold uppercase tracking-[0.16em]">Buka arsip foto <ArrowUpRight :size="14" /></Link>
@@ -207,7 +230,7 @@ onUnmounted(() => {
 
         <section class="relative overflow-hidden bg-[#111] px-6 py-24 text-[#f5f2ec] sm:px-10 sm:py-32 lg:px-14 lg:py-40">
             <div class="archive-grain pointer-events-none absolute inset-0 opacity-60"></div>
-            <div class="relative mx-auto max-w-[1400px]">
+            <div data-scroll-reveal class="relative mx-auto max-w-[1400px]">
                 <SectionEyebrow label="Sampai di sini, untuk sekarang" light />
                 <h2 class="mt-10 max-w-5xl font-editorial text-4xl leading-[1.08] sm:text-6xl lg:text-7xl">{{ home.closing_title || 'DATA BELUM TERSEDIA' }}</h2>
                 <p class="mt-7 max-w-xl text-sm leading-7 text-white/60">{{ home.closing_description || 'DATA BELUM TERSEDIA' }}</p>
