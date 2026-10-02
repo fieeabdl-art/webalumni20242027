@@ -9,7 +9,7 @@ import CustomCursor from '../Components/CustomCursor.vue';
 
 gsap.registerPlugin(ScrollTrigger);
 
-defineProps({
+const props = defineProps({
     site: { type: Object, default: () => ({}) },
 });
 
@@ -65,6 +65,10 @@ onMounted(async () => {
         lenisTick = (time) => lenis?.raf(time * 1000);
         gsap.ticker.add(lenisTick);
         gsap.ticker.lagSmoothing(0);
+    }
+
+    if (props.site.preloader_enabled === '0' || props.site.preloader_enabled === false) {
+        return;
     }
 
     try {
@@ -142,7 +146,7 @@ onUnmounted(() => {
 
 <template>
     <div class="min-h-screen">
-        <CustomCursor />
+        <CustomCursor v-if="site.custom_cursor_enabled !== '0' && site.custom_cursor_enabled !== false" />
 
         <div
             v-if="isPreloaderVisible"

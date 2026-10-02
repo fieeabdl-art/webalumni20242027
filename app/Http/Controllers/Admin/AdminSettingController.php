@@ -14,6 +14,8 @@ class AdminSettingController extends Controller
 {
     private const TEXT_SETTINGS = ['site_name', 'email', 'instagram', 'whatsapp', 'footer_text'];
 
+    private const BOOLEAN_SETTINGS = ['preloader_enabled', 'custom_cursor_enabled'];
+
     public function edit(): Response
     {
         return Inertia::render('Admin/Settings', [
@@ -29,6 +31,8 @@ class AdminSettingController extends Controller
             'instagram' => ['nullable', 'url', 'max:255'],
             'whatsapp' => ['nullable', 'string', 'max:40'],
             'footer_text' => ['nullable', 'string', 'max:240'],
+            'preloader_enabled' => ['required', 'boolean'],
+            'custom_cursor_enabled' => ['required', 'boolean'],
             'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'favicon' => ['nullable', 'file', 'mimes:ico,png,webp', 'max:1024'],
         ];
@@ -38,6 +42,13 @@ class AdminSettingController extends Controller
             SiteSetting::query()->updateOrCreate(
                 ['key' => $key],
                 ['group' => 'general', 'value' => $validated[$key] ?? null],
+            );
+        }
+
+        foreach (self::BOOLEAN_SETTINGS as $key) {
+            SiteSetting::query()->updateOrCreate(
+                ['key' => $key],
+                ['group' => 'motion', 'value' => $validated[$key] ? '1' : '0'],
             );
         }
 
