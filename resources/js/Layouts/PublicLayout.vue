@@ -122,9 +122,10 @@ onMounted(async () => {
                 ease: 'power3.out',
             }, '<')
             .to(preloader.value, {
-                yPercent: -100,
+                yPercent: isReducedMotion ? 0 : -100,
+                autoAlpha: isReducedMotion ? 0 : 1,
                 duration: isReducedMotion ? 0.2 : 0.6,
-                ease: 'power4.inOut',
+                ease: isReducedMotion ? 'power3.out' : 'power4.inOut',
             }, isReducedMotion ? '+=0.05' : '+=0.35');
     }, preloader.value);
 });
