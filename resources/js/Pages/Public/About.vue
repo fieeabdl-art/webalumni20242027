@@ -29,7 +29,7 @@ defineProps({
                 <div>
                     <p class="font-editorial text-3xl leading-[1.25] sm:text-5xl">{{ about.description || 'DATA BELUM TERSEDIA' }}</p>
                     <div v-if="about.main_image_url" class="mt-12 aspect-[16/9] overflow-hidden bg-[#e4ded3]"><img :src="about.main_image_url" alt="Foto cerita angkatan" loading="lazy" class="h-full w-full object-cover"></div>
-                    <div v-else class="archive-grain mt-12 grid aspect-[16/7] place-items-center border border-black/10 bg-[#ede8de] text-[9px] uppercase tracking-[0.16em] text-[#6b6b65]">Foto utama belum tersedia</div>
+                    <div v-else class="archive-grain mt-12 grid aspect-[16/7] place-items-center border border-black/10 bg-[#ede8de] text-[9px] uppercase tracking-[0.16em] text-[#6b6b65]">DATA BELUM TERSEDIA</div>
                     <p class="mt-10 max-w-3xl whitespace-pre-line text-sm leading-8 text-[#6b6b65]">{{ about.story || 'DATA BELUM TERSEDIA' }}</p>
                 </div>
             </div>
