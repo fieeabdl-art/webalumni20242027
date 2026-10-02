@@ -17,6 +17,7 @@ const props = defineProps({
     members: { type: Array, default: () => [] },
     teachers: { type: Array, default: () => [] },
     memories: { type: Array, default: () => [] },
+    quote: { type: Object, default: null },
 });
 
 const hero = ref(null);
@@ -212,13 +213,14 @@ onUnmounted(() => {
             </div>
         </section>
 
-        <section class="px-6 py-24 sm:px-10 sm:py-32 lg:px-14">
+        <div class="section-divider--dark" aria-hidden="true"></div>
+        <section class="bg-[#111111] px-6 py-24 text-[#f5f2ec] sm:px-10 sm:py-32 lg:px-14">
             <div data-scroll-reveal class="mx-auto max-w-[1400px]">
                 <div class="flex flex-wrap items-end justify-between gap-6">
-                    <div><SectionEyebrow number="05" label="Potongan yang tersimpan" /><h2 class="mt-5 font-editorial text-4xl sm:text-6xl">Kenangan kami.</h2></div>
+                    <div><SectionEyebrow number="05" label="Potongan yang tersimpan" light /><h2 class="mt-5 font-editorial text-4xl sm:text-6xl">Kenangan kami.</h2></div>
                 </div>
                 <div class="mt-12">
-                    <CorkboardArchive :memories="memories" :site="site" />
+                    <CorkboardArchive :memories="memories" :site="site" :count="stats.memories" :quote="quote" />
                 </div>
             </div>
         </section>

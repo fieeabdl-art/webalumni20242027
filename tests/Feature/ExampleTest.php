@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Gallery;
+use App\Models\PageContent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -18,7 +19,10 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertOk()->assertInertia(fn (Assert $page) => $page->component('Public/Home'));
+        $response->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('Public/Home')
+            ->where('stats.memories', null)
+            ->where('quote', null));
     }
 
     public function test_home_page_shows_only_published_featured_memories_in_sort_order(): void
@@ -55,11 +59,27 @@ class ExampleTest extends TestCase
             'is_featured' => false,
             'sort_order' => 0,
         ]);
+        PageContent::query()->create([
+            'type' => 'quote',
+            'content' => 'Kutipan yang ditampilkan',
+            'attribution' => 'Pengurus',
+            'status' => true,
+            'sort_order' => 1,
+        ]);
+        PageContent::query()->create([
+            'type' => 'quote',
+            'content' => 'Kutipan tersembunyi',
+            'status' => false,
+            'sort_order' => 0,
+        ]);
 
         $this->get('/')->assertInertia(fn (Assert $page) => $page
             ->component('Public/Home')
             ->has('memories', 2)
             ->where('memories.0.title', 'Kenangan pertama')
-            ->where('memories.1.title', 'Kenangan kedua'));
+            ->where('memories.1.title', 'Kenangan kedua')
+            ->where('stats.memories', 3)
+            ->where('quote.content', 'Kutipan yang ditampilkan')
+            ->where('quote.attribution', 'Pengurus'));
     }
 }

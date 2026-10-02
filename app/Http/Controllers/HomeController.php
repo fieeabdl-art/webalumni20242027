@@ -6,6 +6,7 @@ use App\Models\AboutContent;
 use App\Models\Gallery;
 use App\Models\HomeContent;
 use App\Models\Member;
+use App\Models\PageContent;
 use App\Models\Teacher;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,6 +27,12 @@ class HomeController extends Controller
             'members' => Member::query()->where('status', true)->orderBy('sort_order')->orderBy('name')->limit(4)->get(),
             'teachers' => Teacher::query()->where('status', true)->orderBy('sort_order')->orderBy('name')->limit(3)->get(),
             'memories' => Gallery::query()->where('status', true)->where('is_featured', true)->orderBy('sort_order')->orderBy('id')->limit(6)->get(),
+            'quote' => PageContent::query()
+                ->where('type', 'quote')
+                ->where('status', true)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->first(['content', 'attribution']),
         ]);
     }
 }
