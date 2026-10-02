@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import PublicLayout from '../../Layouts/PublicLayout.vue';
 import SectionEyebrow from '../../Components/SectionEyebrow.vue';
+import CorkboardArchive from '../../Components/CorkboardArchive.vue';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -215,16 +216,10 @@ onUnmounted(() => {
             <div data-scroll-reveal class="mx-auto max-w-[1400px]">
                 <div class="flex flex-wrap items-end justify-between gap-6">
                     <div><SectionEyebrow number="05" label="Potongan yang tersimpan" /><h2 class="mt-5 font-editorial text-4xl sm:text-6xl">Kenangan kami.</h2></div>
-                    <Link href="/kenangan" class="focus-ring inline-flex items-center gap-2 border-b border-[#242424] pb-2 text-[9px] font-semibold uppercase tracking-[0.16em]">Buka arsip foto <ArrowUpRight :size="14" /></Link>
                 </div>
-                <div v-if="memories.length" class="mt-12 columns-1 gap-5 sm:columns-2 lg:columns-3">
-                    <a v-for="memory in memories" :key="memory.id" :href="`/kenangan#${memory.slug}`" class="group mb-5 block break-inside-avoid overflow-hidden bg-[#ded8cd]">
-                        <img v-if="memory.image_url" :src="memory.image_url" :alt="memory.title" loading="lazy" class="w-full transition-transform duration-700 group-hover:scale-[1.03]">
-                        <div v-else class="grid aspect-[4/3] place-items-center text-[9px] uppercase tracking-[0.16em] text-[#6b6b65]">DATA BELUM TERSEDIA</div>
-                        <p class="px-3 py-3 text-[9px] uppercase tracking-[0.14em]">{{ memory.title }}</p>
-                    </a>
+                <div class="mt-12">
+                    <CorkboardArchive :memories="memories" :site="site" />
                 </div>
-                <p v-else class="mt-12 border-y border-black/15 py-7 text-[10px] uppercase tracking-[0.16em] text-[#6b6b65]">DATA BELUM TERSEDIA</p>
             </div>
         </section>
 
