@@ -11,6 +11,7 @@ let magneticX;
 let magneticY;
 let magneticTarget;
 let isEnabled = false;
+const magneticTargets = new Set();
 
 const resetMagneticTarget = () => {
     magneticX?.(0);
@@ -36,6 +37,7 @@ const handlePointerMove = (event) => {
 
         if (nextMagneticTarget instanceof HTMLElement) {
             magneticTarget = nextMagneticTarget;
+            magneticTargets.add(magneticTarget);
             magneticX = gsap.quickTo(magneticTarget, 'x', { duration: 0.35, ease: 'power3.out' });
             magneticY = gsap.quickTo(magneticTarget, 'y', { duration: 0.35, ease: 'power3.out' });
         }
@@ -45,6 +47,13 @@ const handlePointerMove = (event) => {
         const bounds = magneticTarget.getBoundingClientRect();
         magneticX?.((event.clientX - (bounds.left + bounds.width / 2)) * 0.14);
         magneticY?.((event.clientY - (bounds.top + bounds.height / 2)) * 0.14);
+    }
+};
+
+const handlePointerOut = (event) => {
+    if (event.relatedTarget === null) {
+        showCursor?.(0);
+        resetMagneticTarget();
     }
 };
 
@@ -63,6 +72,7 @@ onMounted(() => {
     scaleCursor = gsap.quickTo(cursor.value, 'scale', { duration: 0.25, ease: 'power3.out' });
     showCursor = gsap.quickTo(cursor.value, 'autoAlpha', { duration: 0.16, ease: 'power3.out' });
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('pointerout', handlePointerOut);
 });
 
 onUnmounted(() => {
@@ -71,12 +81,14 @@ onUnmounted(() => {
     }
 
     window.removeEventListener('pointermove', handlePointerMove);
+    window.removeEventListener('pointerout', handlePointerOut);
     document.documentElement.classList.remove('has-custom-cursor');
-    if (magneticTarget) {
-        gsap.killTweensOf(magneticTarget);
-        gsap.set(magneticTarget, { clearProps: 'transform' });
-    }
     resetMagneticTarget();
+    for (const target of magneticTargets) {
+        gsap.killTweensOf(target);
+        gsap.set(target, { clearProps: 'transform' });
+    }
+    magneticTargets.clear();
     gsap.killTweensOf(cursor.value);
 });
 </script>
