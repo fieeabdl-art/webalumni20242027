@@ -20,6 +20,7 @@ const props = defineProps({
 });
 
 const hero = ref(null);
+const heroImage = ref(null);
 const heroTitle = computed(() => props.home.hero_title || 'DATA BELUM TERSEDIA');
 let lenis;
 let lenisTick;
@@ -31,13 +32,27 @@ onMounted(() => {
     gsap.ticker.add(lenisTick);
     gsap.ticker.lagSmoothing(0);
 
+    const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+
     animationContext = gsap.context(() => {
+        if (isReducedMotion) {
+            gsap.from('[data-reveal]', {
+                opacity: 0,
+                duration: 0.25,
+                stagger: 0.05,
+                ease: 'power3.out',
+            });
+
+            return;
+        }
+
         gsap.from('[data-reveal]', {
             y: 26,
             opacity: 0,
             duration: 0.85,
             stagger: 0.12,
-            ease: 'power2.out',
+            ease: 'power3.out',
             delay: 0.15,
         });
         gsap.utils.toArray('[data-scroll-reveal]').forEach((element) => {
@@ -45,11 +60,29 @@ onMounted(() => {
                 y: 30,
                 opacity: 0,
                 duration: 0.8,
-                ease: 'power2.out',
+                ease: 'power3.out',
                 scrollTrigger: { trigger: element, start: 'top 88%' },
             });
         });
-        if (hero.value) {
+
+        if (heroImage.value) {
+            gsap.timeline()
+                .fromTo(heroImage.value, {
+                    clipPath: 'inset(0 0 100% 0)',
+                    scale: 1.08,
+                }, {
+                    clipPath: 'inset(0 0 0% 0)',
+                    duration: 1.5,
+                    ease: 'power4.inOut',
+                })
+                .to(heroImage.value, {
+                    scale: isMobile ? 1.06 : 1.12,
+                    duration: isMobile ? 8 : 14,
+                    ease: 'none',
+                }, 0);
+        }
+
+        if (hero.value && !isMobile) {
             gsap.to(hero.value, {
                 yPercent: 10,
                 ease: 'none',
@@ -70,7 +103,7 @@ onUnmounted(() => {
     <PublicLayout :site="site">
         <section class="relative flex min-h-[760px] h-[100svh] max-h-[1100px] items-end overflow-hidden bg-[#171612] text-[#f5f2ec]">
             <div ref="hero" class="absolute inset-0 origin-center">
-                <img v-if="home.hero_image_url" :src="home.hero_image_url" alt="Foto sampul arsip angkatan" class="h-full w-full object-cover" fetchpriority="high">
+                <img v-if="home.hero_image_url" ref="heroImage" :src="home.hero_image_url" alt="Foto sampul arsip angkatan" class="h-full w-full object-cover will-change-transform" fetchpriority="high">
                 <div v-else class="archive-grain absolute inset-0 bg-[radial-gradient(ellipse_at_58%_32%,#625443_0%,#27241f_38%,#171612_76%)]">
                     <div class="absolute inset-x-[12%] top-[19%] h-[53%] border border-white/10 sm:inset-x-[24%] sm:top-[15%] sm:h-[60%]">
                         <div class="absolute inset-3 border border-white/10 sm:inset-5"></div>
@@ -78,6 +111,8 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <div class="absolute inset-0 bg-gradient-to-t from-[#111]/90 via-[#111]/25 to-[#111]/20"></div>
+                <div class="archive-grain pointer-events-none absolute inset-0 opacity-30 mix-blend-screen"></div>
+                <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,#111_100%)] opacity-50"></div>
             </div>
             <div class="relative z-10 mx-auto w-full max-w-[1600px] px-6 pb-14 pt-32 sm:px-10 sm:pb-20 lg:px-14 lg:pb-[8vh]">
                 <div class="max-w-5xl">
